@@ -1717,10 +1717,8 @@
         var u = obj.userData;
         var x1 = obj.position.x - u.w / 2, z1 = obj.position.z - u.d / 2;
         var x2 = obj.position.x + u.w / 2, z2 = obj.position.z + u.d / 2;
-        dxf += '0\nLINE\n8\nEQUIP\n10\n' + x1 + '\n20
-' + z1 + '\n11\n' + x2 + '\n21\n' + z1 + '\n';
-        dxf += '0\nLINE\n8\nEQUIP\n10\n' + x2 + '\n20
-' + z1 + '\n11\n' + x2 + '\n21\n' + z2 + '\n';
+        dxf += '0\nLINE\n8\nEQUIP\n10\n' + x1 + '\n20\n' + z1 + '\n11\n' + x2 + '\n21\n' + z1 + '\n';
+        dxf += '0\nLINE\n8\nEQUIP\n10\n' + x2 + '\n20\n' + z1 + '\n11\n' + x2 + '\n21\n' + z2 + '\n';
       });
       dxf += '0\nENDSEC\n0\nEOF\n';
       downloadTextFile('shinsegae_fe_plan_2d.dxf', dxf);
@@ -1752,7 +1750,7 @@
     // --- 작업 영역 / 격자 설정 커스텀 수치 제어 & GitHub APK 자동 업데이트 ---
     var customSnapStep = 100;
     var customGridPitch = 100;
-    var APP_VERSION = 'v1.2.0';
+    var APP_VERSION = 'v1.2.1';
     var latestApkUrl = '';
 
     function setCustomGrid(val) {
