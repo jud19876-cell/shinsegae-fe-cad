@@ -1,0 +1,9 @@
+*.jks
+*.keystore
+.gradle/
+build/
+android/app/build/
+android/.gradle/
+android/app/release-key.jks
+local.properties
+*.apk

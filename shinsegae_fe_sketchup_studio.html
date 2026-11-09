@@ -1,0 +1,1873 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>SHINSEGAE FOOD FE - 3D Web SketchUp & Plant Layout Studio</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+  <style>
+    :root {
+      --bg-ivory: #F8F7F4;
+      --bg-slate: #F1F5F9;
+      --panel-bg: #FFFFFF;
+      --border-col: #CBD5E1;
+      --text-main: #0F172A;
+      --text-muted: #475569;
+      --ssg-red: #C8102E;
+      --ssg-red-hover: #A00C24;
+      --ssg-navy: #1E3A8A;
+      --ssg-navy-light: #EFF6FF;
+      --accent-teal: #0D9488;
+      --accent-amber: #D97706;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-ivory);
+      color: var(--text-main);
+      height: 100dvh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* 1. 상단 엔지니어링 헤더 & 스케치업 툴바 */
+    .top-header {
+      background: var(--ssg-navy);
+      color: #fff;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      font-size: clamp(10.5px, 2.5vw, 12px);
+      border-bottom: 2px solid var(--ssg-red);
+      flex-shrink: 0;
+      z-index: 30;
+    }
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .brand-badge {
+      background: var(--ssg-red);
+      color: #fff;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .top-toolbar {
+      background: var(--panel-bg);
+      border-bottom: 1px solid var(--border-col);
+      padding: 5px 8px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      overflow-x: auto;
+      white-space: nowrap;
+      flex-shrink: 0;
+      z-index: 25;
+      scrollbar-width: none;
+    }
+    .top-toolbar::-webkit-scrollbar { display: none; }
+
+    .tool-group {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding-right: 6px;
+      border-right: 1px solid #E2E8F0;
+      flex-shrink: 0;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 8px;
+      font-size: clamp(10px, 2.2vw, 11.5px);
+      font-weight: 600;
+      border: 1px solid var(--border-col);
+      background: #fff;
+      color: var(--text-main);
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .btn:hover { background: var(--bg-slate); border-color: #94A3B8; }
+    .btn.active {
+      background: var(--ssg-red);
+      color: #fff;
+      border-color: var(--ssg-red);
+    }
+    .btn-navy {
+      background: var(--ssg-navy);
+      color: #fff;
+      border-color: var(--ssg-navy);
+    }
+    .btn-fit {
+      background: #0F172A;
+      color: #38BDF8;
+      border-color: #334155;
+      font-weight: 700;
+    }
+
+    /* 2. 메인 워크스페이스 */
+    .workspace {
+      flex: 1;
+      display: flex;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 좌측 스케치업 드로잉 아이콘 바 */
+    .left-sketch-bar {
+      width: 42px;
+      background: var(--panel-bg);
+      border-right: 1px solid var(--border-col);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 6px 0;
+      gap: 5px;
+      flex-shrink: 0;
+      z-index: 22;
+    }
+    .icon-btn {
+      width: 32px;
+      height: 32px;
+      border: 1px solid transparent;
+      background: transparent;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-main);
+    }
+    .icon-btn:hover { background: var(--bg-slate); border-color: var(--border-col); }
+    .icon-btn.active { background: var(--ssg-red); color: #fff; }
+    .icon-btn svg { width: 16px; height: 16px; }
+
+    /* 좌측 자이로테크/이케아 스타일 식품설비 카탈로그 독 */
+    .left-catalog-dock {
+      width: clamp(230px, 22vw, 295px);
+      background: var(--panel-bg);
+      border-right: 1px solid var(--border-col);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      z-index: 20;
+      transition: transform 0.22s ease, margin-left 0.22s ease;
+    }
+    .left-catalog-dock.collapsed {
+      margin-left: calc(-1 * clamp(230px, 22vw, 295px));
+    }
+
+    .panel-header {
+      padding: 8px 10px;
+      background: var(--bg-slate);
+      border-bottom: 1px solid var(--border-col);
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--ssg-navy);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .panel-close-btn {
+      background: transparent;
+      border: 1px solid var(--border-col);
+      border-radius: 3px;
+      padding: 1px 6px;
+      font-size: 10px;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .cat-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      padding: 4px;
+      background: #E2E8F0;
+      border-bottom: 1px solid var(--border-col);
+    }
+    .cat-tab {
+      padding: 5px 3px;
+      font-size: 10.5px;
+      font-weight: 600;
+      text-align: center;
+      background: #fff;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      border-radius: 2px;
+    }
+    .cat-tab.active {
+      background: var(--ssg-navy);
+      color: #fff;
+    }
+
+    .asset-grid {
+      flex: 1;
+      overflow-y: auto;
+      padding: 7px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      align-content: start;
+    }
+    .asset-card {
+      border: 1px solid var(--border-col);
+      border-radius: 4px;
+      padding: 6px;
+      background: #fff;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: all 0.12s;
+    }
+    .asset-card:hover { border-color: var(--ssg-navy); background: var(--ssg-navy-light); }
+    .asset-card.selected {
+      border: 2px solid var(--ssg-red);
+      background: #FFF1F2;
+    }
+    .asset-thumb {
+      width: 100%;
+      height: 46px;
+      background: var(--bg-ivory);
+      border: 1px solid #E2E8F0;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 4px;
+    }
+    .asset-name { font-size: 10.5px; font-weight: 700; color: var(--text-main); line-height: 1.2; }
+    .asset-code { font-size: 9px; color: var(--text-muted); margin-top: 2px; }
+
+    /* 자이로테크 스타일 하단 규격(W×D×H) 선택 및 배치 박 */
+    .param-box {
+      border-top: 1px solid var(--border-col);
+      padding: 8px 10px;
+      background: var(--bg-slate);
+      font-size: 11px;
+    }
+    .param-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+    .param-input {
+      width: 60px;
+      padding: 3px 5px;
+      font-size: 11px;
+      border: 1px solid var(--border-col);
+      border-radius: 3px;
+      text-align: right;
+      font-family: monospace;
+    }
+    .width-presets {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+    .preset-chip {
+      padding: 2px 6px;
+      font-size: 10px;
+      background: #fff;
+      border: 1px solid var(--border-col);
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .preset-chip.active { background: var(--ssg-navy); color: #fff; border-color: var(--ssg-navy); }
+
+    /* 중앙 3D & 2D 뷰포트 */
+    .viewport-container {
+      flex: 1;
+      position: relative;
+      background: var(--bg-ivory);
+      overflow: hidden;
+    }
+    #canvas3d { width: 100%; height: 100%; display: block; touch-action: none; }
+
+    /* 뷰포트 상단 플로팅 HUD */
+    .viewport-hud-top {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      right: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      pointer-events: none;
+      z-index: 12;
+    }
+    .hud-badge {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid var(--border-col);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: clamp(9.5px, 2vw, 11px);
+      font-weight: 600;
+      color: var(--text-main);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      pointer-events: auto;
+    }
+    .hud-coords {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      background: rgba(15, 23, 42, 0.85);
+      color: #F8FAFC;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: clamp(9.5px, 2vw, 11px);
+      z-index: 12;
+      pointer-events: none;
+    }
+
+    /* 우측 AI 에이전트 & 유틸리티/속성 트레이 */
+    .right-dock {
+      width: clamp(280px, 25vw, 360px);
+      background: var(--panel-bg);
+      border-left: 1px solid var(--border-col);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      z-index: 20;
+      transition: transform 0.22s ease, margin-right 0.22s ease;
+    }
+    .right-dock.collapsed {
+      margin-right: calc(-1 * clamp(280px, 25vw, 360px));
+    }
+
+    /* AI 에이전트 채팅창 */
+    .ai-agent-section {
+      flex: 1.15;
+      display: flex;
+      flex-direction: column;
+      border-bottom: 1px solid var(--border-col);
+      min-height: 210px;
+    }
+    .ai-chat-log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      background: #F8FAFC;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      font-size: 11px;
+    }
+    .msg-user {
+      align-self: flex-end;
+      background: var(--ssg-navy);
+      color: #fff;
+      padding: 6px 9px;
+      border-radius: 6px 6px 0 6px;
+      max-width: 88%;
+      line-height: 1.4;
+    }
+    .msg-ai {
+      align-self: flex-start;
+      background: #fff;
+      border: 1px solid var(--border-col);
+      padding: 7px 9px;
+      border-radius: 0 6px 6px 6px;
+      max-width: 96%;
+      line-height: 1.42;
+    }
+    .tool-call-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--bg-slate);
+      border-left: 3px solid var(--ssg-red);
+      padding: 3px 6px;
+      font-size: 10px;
+      color: var(--text-muted);
+      margin: 3px 0;
+      font-family: monospace;
+    }
+    .ai-quick-prompts {
+      padding: 5px 8px;
+      background: #fff;
+      border-top: 1px solid #E2E8F0;
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+    }
+    .quick-chip {
+      padding: 3px 7px;
+      font-size: 10px;
+      background: var(--ssg-navy-light);
+      color: var(--ssg-navy);
+      border: 1px solid #BFDBFE;
+      border-radius: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+    .ai-input-row {
+      display: flex;
+      padding: 6px;
+      gap: 5px;
+      background: #fff;
+      border-top: 1px solid var(--border-col);
+    }
+    .ai-input {
+      flex: 1;
+      padding: 6px 8px;
+      font-size: 12px;
+      border: 1px solid var(--border-col);
+      border-radius: 4px;
+      outline: none;
+    }
+
+    /* 우측 하단 엔지니어링 속성 & 유틸리티 BOM 집계 */
+    .inspector-section {
+      flex: 0.85;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .color-palette {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 4px;
+      padding: 6px 10px;
+    }
+    .color-swatch {
+      height: 20px;
+      border-radius: 3px;
+      border: 1px solid rgba(0,0,0,0.15);
+      cursor: pointer;
+    }
+    .bom-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10.5px;
+    }
+    .bom-table th, .bom-table td {
+      padding: 4px 7px;
+      border-bottom: 1px solid #E2E8F0;
+      text-align: left;
+    }
+    .bom-table th { background: var(--bg-slate); color: var(--text-muted); font-weight: 600; }
+
+    /* 3. 하단 자이로테크 스타일 AutoCAD LISP 커맨드 라인 */
+    .bottom-cmd-bar {
+      height: 48px;
+      background: #1E293B;
+      color: #E2E8F0;
+      border-top: 1px solid #0F172A;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 4px 10px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 10.5px;
+      flex-shrink: 0;
+      z-index: 25;
+    }
+    .cmd-history {
+      color: #94A3B8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cmd-input-line {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .cmd-prompt { color: #38BDF8; font-weight: 700; flex-shrink: 0; }
+    .cmd-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #F8FAFC;
+      font-family: inherit;
+      font-size: 11px;
+      outline: none;
+    }
+
+    /* ============================================================
+       모바일 & 태블릿 (화면 폭 920px 이하) 전용 뷰포트 자동 보정 레이아웃
+       ============================================================ */
+    .mobile-bottom-nav {
+      display: none;
+    }
+
+    @media (max-width: 920px) {
+      .brand-subtitle { display: none; }
+      .bottom-cmd-bar { display: none; }
+
+      /* 좌/우측 패널을 화면을 가리지 않는 하단 슬라이드 바텀시트(Drawer)로 전환 */
+      .left-catalog-dock, .right-dock {
+        position: absolute;
+        left: 42px;
+        right: 0;
+        bottom: 0;
+        width: auto !important;
+        height: 56dvh;
+        margin: 0 !important;
+        border-top: 2px solid var(--ssg-red);
+        border-left: none;
+        border-right: none;
+        box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.22);
+        transform: translateY(0%);
+      }
+      .left-catalog-dock.collapsed, .right-dock.collapsed {
+        transform: translateY(105%);
+        pointer-events: none;
+      }
+
+      /* 모바일 전용 하단 퀵 액션 바 */
+      .mobile-bottom-nav {
+        display: flex;
+        height: 44px;
+        background: #0F172A;
+        color: #fff;
+        align-items: center;
+        justify-content: space-around;
+        border-top: 1px solid #334155;
+        flex-shrink: 0;
+        z-index: 35;
+      }
+      .mob-nav-btn {
+        flex: 1;
+        height: 100%;
+        background: transparent;
+        border: none;
+        border-right: 1px solid #1E293B;
+        color: #CBD5E1;
+        font-size: 11px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        cursor: pointer;
+      }
+      .mob-nav-btn.active {
+        background: var(--ssg-red);
+        color: #fff;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- GitHub APK Auto-Update Banner & Settings Modal -->
+  <div id="ghUpdateBanner" style="display:none; background:#C8102E; color:#fff; padding:8px 14px; font-size:12px; font-weight:700; align-items:center; justify-content:space-between; z-index:9999;">
+    <span id="ghUpdateText">🚀 새 버전이 출시되었습니다!</span>
+    <div style="display:flex; gap:6px;">
+      <button onclick="triggerApkInstall()" style="background:#fff; color:#C8102E; border:none; padding:4px 10px; border-radius:4px; font-weight:800; cursor:pointer;">지금 업데이트 설치</button>
+      <button onclick="document.getElementById('ghUpdateBanner').style.display='none'" style="background:transparent; color:#fff; border:1px solid rgba(255,255,255,0.6); padding:4px 8px; border-radius:4px; cursor:pointer;">나중에 (앱 종료 시 자동설치)</button>
+    </div>
+  </div>
+
+  <!-- Custom Grid / Workspace & GitHub Config Floating Panel -->
+  <div id="customGridModal" style="display:none; position:fixed; top:50px; left:52px; width:310px; background:#fff; border:2px solid #1E3A8A; border-radius:6px; box-shadow:0 8px 24px rgba(15,23,42,0.22); padding:12px; z-index:9000; font-size:11.5px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; font-weight:800; color:#1E3A8A; margin-bottom:8px; border-bottom:1px solid #CBD5E1; padding-bottom:5px;">
+      <span>⚙️ 작업 영역 · 격자 수치 직접 설정 & APK 업데이트</span>
+      <button onclick="document.getElementById('customGridModal').style.display='none'" style="border:none; background:transparent; cursor:pointer; font-weight:700;">✕</button>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:6px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <label>격자 간격 (Grid mm):</label>
+        <input type="number" id="customGridMm" value="100" min="1" step="10" style="width:90px; padding:3px 6px; border:1px solid #CBD5E1; border-radius:3px; text-align:right;" />
+      </div>
+      <div style="display:flex; gap:4px; justify-content:flex-end;">
+        <button class="btn" onclick="setCustomGrid(50)">50</button>
+        <button class="btn" onclick="setCustomGrid(100)">100</button>
+        <button class="btn" onclick="setCustomGrid(250)">250</button>
+        <button class="btn" onclick="setCustomGrid(500)">500</button>
+        <button class="btn" onclick="setCustomGrid(1000)">1000</button>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <label>마그네틱 스냅 단위 (mm):</label>
+        <input type="number" id="customSnapMm" value="100" min="1" step="5" style="width:90px; padding:3px 6px; border:1px solid #CBD5E1; border-radius:3px; text-align:right;" />
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <label>작업영역 가로 W (mm):</label>
+        <input type="number" id="customRoomW" value="8000" min="500" step="100" style="width:90px; padding:3px 6px; border:1px solid #CBD5E1; border-radius:3px; text-align:right;" />
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <label>작업영역 세로 D (mm):</label>
+        <input type="number" id="customRoomD" value="6000" min="500" step="100" style="width:90px; padding:3px 6px; border:1px solid #CBD5E1; border-radius:3px; text-align:right;" />
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <label>판넬 벽 높이 H (mm):</label>
+        <input type="number" id="customRoomH" value="3200" min="500" step="100" style="width:90px; padding:3px 6px; border:1px solid #CBD5E1; border-radius:3px; text-align:right;" />
+      </div>
+      <button class="btn active" style="justify-content:center; padding:6px; margin-top:4px;" onclick="applyCustomWorkspaceAndGrid()">✓ 작업영역 · 격자 수치 즉시 적용</button>
+      <hr style="border:none; border-top:1px solid #E2E8F0; margin:6px 0;" />
+      <div style="font-weight:700; color:#0F172A;">🔄 GitHub APK 자동 업데이트 연동</div>
+      <input type="text" id="ghRepoInput" placeholder="GitHub 계정/저장소 (예: user/fe-cad)" value="" style="width:100%; padding:4px 6px; border:1px solid #CBD5E1; border-radius:3px; font-size:11px;" />
+      <button class="btn btn-navy" style="justify-content:center; padding:5px;" onclick="saveGhRepoAndCheck()">저장소 연결 및 최신 버전 확인</button>
+    </div>
+  </div>
+
+
+  <!-- 1. 상단 신세계푸드 엔지니어링 헤더 -->
+  <header class="top-header">
+    <div class="brand-title">
+      <span class="brand-badge">SHINSEGAE FOOD</span>
+      <span>FE 3D 웹 스케치업</span>
+      <span class="brand-subtitle">· 식품설비 레이아웃 스튜디오 (1:1 mm BIM)</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-fit" onclick="autoFitCameraToVisibleViewport()" title="현재 열린 메뉴를 제외한 실제 보이는 3D 화면 중앙으로 자동 맞춤">
+        🎯 화면 중앙 자동보정
+      </button>
+      <button class="btn" id="hdrBtnLeft" onclick="togglePanel('left')" style="padding:3px 7px;">📦 설비카탈로그</button>
+      <button class="btn" id="hdrBtnRight" onclick="togglePanel('right')" style="padding:3px 7px;">🤖 AI·속성</button>
+      <button class="btn" onclick="hideAllPanels()" style="padding:3px 7px;" title="모든 메뉴 숨기고 3D 전체화면 보기">👁️ 전체화면</button>
+    </div>
+  </header>
+
+  <!-- 상단 툴바 (가로 스크롤 지원) -->
+  <div class="top-toolbar">
+    <div class="tool-group">
+      <button class="btn active" id="btnView3D" onclick="setCameraMode('3D')">3D 조감도</button>
+      <button class="btn" id="btnView2D" onclick="setCameraMode('2D')">2D 평면도</button>
+      <button class="btn" onclick="setCameraMode('FRONT')">정면도</button>
+      <button class="btn" onclick="setCameraMode('SIDE')">측면도</button>
+    </div>
+
+    <div class="tool-group">
+      <button class="btn" id="btnToggleWall" onclick="toggleWallXray()">벽체 X-Ray</button>
+      <button class="btn" id="btnToggleDim" onclick="toggleDimensions()">치수선 ON</button>
+      <button class="btn" id="btnToggleSim" onclick="toggleSimulation()">물류 시뮬 OFF</button>
+    </div>
+
+    <div class="tool-group">
+      <label style="font-size:10.5px; font-weight:600; color:var(--text-muted);">벽 투명도:</label>
+      <input type="range" min="10" max="100" value="85" style="width:65px;" oninput="setWallOpacity(this.value)" />
+    </div>
+
+    <div class="tool-group" style="border-right:none; margin-left:auto;">
+      <button class="btn" onclick="exportToDAE()">.DAE</button>
+      <button class="btn" onclick="exportToOBJ()">.OBJ</button>
+      <button class="btn" onclick="exportToDXF()">.DXF</button>
+      <button class="btn btn-navy" onclick="exportSceneJSON()">JSON</button>
+    </div>
+  </div>
+
+  <!-- 2. 메인 워크스페이스 -->
+  <div class="workspace" id="workspaceRoot">
+
+    <!-- 스케치업 좌측 드로잉 툴바 -->
+    <div class="left-sketch-bar">
+      <button class="icon-btn active" id="tool-select" onclick="setSketchTool('select')" title="선택 (Space)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
+      </button>
+      <button class="icon-btn" id="tool-move" onclick="setSketchTool('translate')" title="이동 (M)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg>
+      </button>
+      <button class="icon-btn" id="tool-rotate" onclick="setSketchTool('rotate')" title="90° 회전 (R)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38"/></svg>
+      </button>
+      <button class="icon-btn" id="tool-scale" onclick="setSketchTool('pushpull')" title="Push/Pull 높이 조절 (P)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4M4 21h16"/></svg>
+      </button>
+      <button class="icon-btn" id="tool-room" onclick="createRoomPrompt()" title="HACCP 클린룸/부스 생성">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+      </button>
+      <button class="icon-btn" onclick="autoFitCameraToVisibleViewport()" title="보이는 영역에 화면 자동 보정">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#C8102E"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg>
+      </button>
+      <button class="icon-btn" onclick="deleteSelected()" title="선택 객체 삭제 (Del)" style="margin-top:auto; color:var(--ssg-red);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
+    </div>
+
+    <!-- 좌측 자이로테크/이케아 스타일 식품설비 에셋 카탈로그 독 -->
+    <aside class="left-catalog-dock" id="leftDock">
+      <div class="panel-header">
+        <span>식품공장 설비 에셋 라이브러리</span>
+        <button class="panel-close-btn" onclick="togglePanel('left')">닫기 ✕</button>
+      </div>
+
+      <div class="cat-tabs">
+        <button class="cat-tab active" onclick="filterCatalog('cook', this)">가열·조리</button>
+        <button class="cat-tab" onclick="filterCatalog('conv', this)">이송·물류</button>
+        <button class="cat-tab" onclick="filterCatalog('prep', this)">작업·세척</button>
+        <button class="cat-tab" onclick="filterCatalog('pack', this)">포장·검사</button>
+        <button class="cat-tab" onclick="filterCatalog('arch', this)">건축·유틸</button>
+        <button class="cat-tab" onclick="filterCatalog('all', this)">전체보기</button>
+      </div>
+
+      <div class="asset-grid" id="assetGrid"></div>
+
+      <div class="param-box">
+        <div style="font-weight:700; color:var(--ssg-navy); margin-bottom:5px;" id="selectedAssetTitle">
+          설비를 선택하세요
+        </div>
+        <div class="width-presets" id="widthPresets"></div>
+        <div class="param-row">
+          <span>폭 W (mm):</span>
+          <input type="number" id="paramW" class="param-input" value="1200" step="100" />
+          <span>깊이 D:</span>
+          <input type="number" id="paramD" class="param-input" value="1200" step="100" />
+        </div>
+        <div class="param-row">
+          <span>높이 H (mm):</span>
+          <input type="number" id="paramH" class="param-input" value="1450" step="50" />
+          <span>회전 (°):</span>
+          <input type="number" id="paramRot" class="param-input" value="0" step="90" />
+        </div>
+        <button class="btn active" style="width:100%; justify-content:center; margin-top:3px; padding:7px;" onclick="placeSelectedCatalogAsset()">
+          + 도면에 설비 배치 (Snap)
+        </button>
+      </div>
+    </aside>
+
+    <!-- 중앙 3D WebGL & 2D CAD 뷰포트 -->
+    <main class="viewport-container" id="viewportContainer">
+      <div class="viewport-hud-top">
+        <div class="hud-badge" id="hudZoneInfo">구역: 가열·내포장 클린룸 (8,000 × 6,000 mm)</div>
+        <div class="hud-badge" id="hudSelectedInfo">선택: 없음</div>
+        <div class="hud-badge" id="hudViewportCalib" style="background:#EFF6FF; color:#1E3A8A; border-color:#BFDBFE;">
+          자동 화면보정: ON
+        </div>
+      </div>
+      <canvas id="canvas3d"></canvas>
+      <div class="hud-coords" id="hudCoords">X: 0 | Y: 0 mm | 1:1 Scale</div>
+    </main>
+
+    <!-- 우측 AI 에이전트 채팅창 & 설비 유틸리티 집계 독 -->
+    <aside class="right-dock" id="rightDock">
+      <div class="ai-agent-section">
+        <div class="panel-header">
+          <span>AI 공간·설비 에이전트 (Tool-Calling)</span>
+          <button class="panel-close-btn" onclick="togglePanel('right')">닫기 ✕</button>
+        </div>
+
+        <div class="ai-chat-log" id="aiChatLog">
+          <div class="msg-ai">
+            안녕하세요! <strong>신세계푸드 FE 3D 스케치업 에이전트</strong>입니다.<br/>
+            아래 프리셋 칩을 누르거나 원하는 설비 배치를 입력하시면, <strong>현재 열려 있는 메뉴를 제외한 실제 보이는 화면 정중앙</strong>에 맞춰 3D 모델을 자동 보정합니다.
+          </div>
+        </div>
+
+        <div class="ai-quick-prompts">
+          <span class="quick-chip" onclick="runPresetPrompt('cookRoom')">가열조리실(스팀솥3+싱크+후드)</span>
+          <span class="quick-chip" onclick="runPresetPrompt('packLine')">내포장 컨베이어+금속검출 라인</span>
+          <span class="quick-chip" onclick="runPresetPrompt('boothDemo')">스레드 영상 부스(선반+모니터+테이블)</span>
+        </div>
+
+        <div class="ai-input-row">
+          <input type="text" id="aiPromptInput" class="ai-input" placeholder="예: 8x6m 방 만들고 스팀솥 3대 배치해줘" onkeydown="if(event.key==='Enter') sendAiPrompt()" />
+          <button class="btn active" onclick="sendAiPrompt()">실행</button>
+        </div>
+      </div>
+
+      <!-- 우측 하단 HACCP 구역 색상 & 유틸리티 BOM 집계 -->
+      <div class="inspector-section">
+        <div class="panel-header">
+          <span>HACCP 색상 팔레트 & 유틸리티 집계</span>
+        </div>
+        <div class="color-palette">
+          <div class="color-swatch" style="background:#D1FAE5;" title="청정 내포장실 에폭시" onclick="applyColorToSelected('#10B981')"></div>
+          <div class="color-swatch" style="background:#DBEAFE;" title="냉장·냉동구역" onclick="applyColorToSelected('#3B82F6')"></div>
+          <div class="color-swatch" style="background:#E2E8F0;" title="SUS304 스테인리스" onclick="applyColorToSelected('#CBD5E1')"></div>
+          <div class="color-swatch" style="background:#FEF3C7;" title="가열·조리구역" onclick="applyColorToSelected('#F59E0B')"></div>
+          <div class="color-swatch" style="background:#C8102E;" title="신세계 버건디" onclick="applyColorToSelected('#C8102E')"></div>
+          <div class="color-swatch" style="background:#1E3A8A;" title="신세계 네이비" onclick="applyColorToSelected('#1E3A8A')"></div>
+        </div>
+
+        <div style="padding: 0 10px 6px 10px;">
+          <table class="bom-table">
+            <thead>
+              <tr><th>집계 항목 (FE 공무 기준)</th><th>합계 스펙</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>배치 설비 총 수량</td><td id="bomCount">0 대</td></tr>
+              <tr><td>총 소요 전력 (380V/220V)</td><td id="bomElec">0.0 kW</td></tr>
+              <tr><td>총 스팀 소비량 (Steam)</td><td id="bomSteam">0 kg/hr</td></tr>
+              <tr><td>급수/배수 트렌치 포인트</td><td id="bomWater">0 개소</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="padding: 0 10px 10px 10px; flex:1; overflow-y:auto;">
+          <table class="bom-table" id="sceneObjectTable">
+            <thead>
+              <tr><th>코드/설비명</th><th>규격(W×D×H)</th><th>좌표(X,Y)</th></tr>
+            </thead>
+            <tbody id="sceneObjectTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- 모바일 전용 하단 네비게이션 바 (폰 화면에서 메뉴 겹침 방지 + 원클릭 보정) -->
+  <nav class="mobile-bottom-nav">
+    <button class="mob-nav-btn active" id="mobBtn3D" onclick="hideAllPanels()">
+      👁️ 3D 도면 전체보기
+    </button>
+    <button class="mob-nav-btn" id="mobBtnLeft" onclick="togglePanel('left')">
+      📦 설비 카탈로그
+    </button>
+    <button class="mob-nav-btn" id="mobBtnRight" onclick="togglePanel('right')">
+      🤖 AI 에이전트/BOM
+    </button>
+    <button class="mob-nav-btn" onclick="autoFitCameraToVisibleViewport()" style="color:#38BDF8;">
+      🎯 화면보정
+    </button>
+  </nav>
+
+  <!-- 3. 하단 자이로테크 스타일 AutoCAD LISP 커맨드 라인 (PC용) -->
+  <footer class="bottom-cmd-bar">
+    <div class="cmd-history" id="cmdHistory">
+      명령: (INIT-SCENE "SHINSEGAE-FE-BIM" "UNIT:MM" "AUTO-VIEWPORT-CALIBRATION:ON")
+    </div>
+    <div class="cmd-input-line">
+      <span class="cmd-prompt">CAD 명령 &gt;</span>
+      <input type="text" id="cmdInput" class="cmd-input" placeholder='(EQUIP "KETTLE-300L" "1350x1200x1450" "-2000,1500" "STEAM") 또는 BOX 1200 800 850 입력 후 Enter' onkeydown="if(event.key==='Enter') executeCadCommand(this.value)" />
+    </div>
+  </footer>
+
+  <script>
+    // --- 전역 UI 상태 (모바일/PC 화면 크기에 따라 초기 패널 개폐 자동 감지) ---
+    var isMobileViewport = window.innerWidth <= 920;
+    var uiState = {
+      leftOpen: !isMobileViewport,
+      rightOpen: !isMobileViewport,
+      cameraMode: '3D',
+      wallXray: false,
+      showDims: true,
+      simRunning: false,
+      currentTool: 'select'
+    };
+
+    var EQUIPMENT_CATALOG = [
+      {
+        id: 'KETTLE-300L', category: 'cook', name: '회전식 교반 스팀솥 300L',
+        w: 1350, d: 1200, h: 1450, widths: [1000, 1200, 1350, 1500],
+        elec: 2.2, steam: 45, water: 1, color: 0xdbeafe, type: 'kettle'
+      },
+      {
+        id: 'TUNNEL-OVEN', category: 'cook', name: '터널식 연속 오븐기',
+        w: 3600, d: 1400, h: 1650, widths: [2400, 3600, 4800],
+        elec: 45.0, steam: 20, water: 0, color: 0xe2e8f0, type: 'oven'
+      },
+      {
+        id: 'CONV-BELT', category: 'conv', name: '모듈러 벨트 컨베이어',
+        w: 2400, d: 650, h: 850, widths: [1200, 1800, 2400, 3000],
+        elec: 0.75, steam: 0, water: 0, color: 0x0d9488, type: 'conveyor'
+      },
+      {
+        id: 'LIFT-HK200', category: 'conv', name: '볼 티퍼 리프트 (HK 200L)',
+        w: 1100, d: 1250, h: 2450, widths: [1100, 1300],
+        elec: 1.5, steam: 0, water: 0, color: 0x94a3b8, type: 'lift'
+      },
+      {
+        id: 'WORKTABLE-SUS', category: 'prep', name: 'SUS304 2단 작업대',
+        w: 1500, d: 750, h: 850, widths: [900, 1200, 1500, 1800],
+        elec: 0, steam: 0, water: 0, color: 0xf1f5f9, type: 'table'
+      },
+      {
+        id: 'SINK-2BOWL', category: 'prep', name: '세척 2조 싱크대 (수전포함)',
+        w: 1500, d: 750, h: 850, widths: [1200, 1500, 1800, 2100],
+        elec: 0, steam: 0, water: 2, color: 0xcbd5e1, type: 'sink'
+      },
+      {
+        id: 'RACK-4TIER', category: 'prep', name: '다단 적재 선반 (4단 랙)',
+        w: 1200, d: 500, h: 1800, widths: [900, 1200, 1500, 1800],
+        elec: 0, steam: 0, water: 0, color: 0xd97706, type: 'shelf'
+      },
+      {
+        id: 'FLOW-WRAPPER', category: 'pack', name: '삼방 자동포장기 (Wrapper)',
+        w: 3200, d: 950, h: 1400, widths: [2800, 3200, 3800],
+        elec: 5.5, steam: 0, water: 0, color: 0xe2e8f0, type: 'wrapper'
+      },
+      {
+        id: 'METAL-DET', category: 'pack', name: '일체형 금속검출기+중량선별',
+        w: 1600, d: 700, h: 1150, widths: [1400, 1600, 1800],
+        elec: 1.2, steam: 0, water: 0, color: 0x3b82f6, type: 'detector'
+      },
+      {
+        id: 'HOOD-SUS', category: 'arch', name: '상부 배기 SUS 후드 (천장형)',
+        w: 1600, d: 1400, h: 550, widths: [1200, 1600, 2400, 3600],
+        elec: 1.5, steam: 0, water: 0, color: 0x94a3b8, type: 'hood'
+      },
+      {
+        id: 'MEETING-SET', category: 'arch', name: '원형 상담테이블 & 스툴 세트',
+        w: 900, d: 900, h: 750, widths: [800, 900, 1000],
+        elec: 0, steam: 0, water: 0, color: 0xc8102e, type: 'meeting'
+      },
+      {
+        id: 'TV-STAND', category: 'arch', name: '현황판 모니터 스탠드',
+        w: 1100, d: 450, h: 1650, widths: [900, 1100, 1400],
+        elec: 0.3, steam: 0, water: 0, color: 0x1e293b, type: 'monitor'
+      }
+    ];
+
+    var selectedCatalogItem = EQUIPMENT_CATALOG[0];
+    var placedObjects = [];
+    var simPackets = [];
+    var dimLinesGroup = null;
+    var roomGroup = null;
+    var roomConfig = { w: 8000, d: 6000, h: 3200 };
+
+    var container = document.getElementById('viewportContainer');
+    var canvas = document.getElementById('canvas3d');
+    var scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xF8F7F4);
+
+    var camera = new THREE.PerspectiveCamera(45, 1, 50, 120000);
+    camera.position.set(7500, 6800, 8500);
+
+    var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, preserveDrawingBuffer: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+
+    var orbit = new THREE.OrbitControls(camera, renderer.domElement);
+    orbit.target.set(0, 800, 0);
+    orbit.enableDamping = true;
+    orbit.dampingFactor = 0.08;
+
+    var transformControl = new THREE.TransformControls(camera, renderer.domElement);
+    transformControl.addEventListener('dragging-changed', function (event) {
+      orbit.enabled = !event.value;
+      if (!event.value) {
+        updateObjectTableAndBOM();
+        rebuildDimensionLines();
+      }
+    });
+    scene.add(transformControl);
+
+    var ambLight = new THREE.AmbientLight(0xffffff, 0.75);
+    scene.add(ambLight);
+    var dirLight = new THREE.DirectionalLight(0xffffff, 0.65);
+    dirLight.position.set(6000, 12000, 8000);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    var gridHelper = new THREE.GridHelper(20000, 20, 0x94A3B8, 0xE2E8F0);
+    gridHelper.position.y = -2;
+    scene.add(gridHelper);
+
+    var axesHelper = new THREE.AxesHelper(4500);
+    axesHelper.position.set(-4000, 2, -3000);
+    scene.add(axesHelper);
+
+    dimLinesGroup = new THREE.Group();
+    scene.add(dimLinesGroup);
+
+    // =========================================================================
+    // 핵심 기능: 보이는 화면(가려지지 않은 실제 유효 뷰포트 영역)에 맞춘 카메라 자동 보정
+    // =========================================================================
+    function syncPanelDOMState() {
+      var leftDock = document.getElementById('leftDock');
+      var rightDock = document.getElementById('rightDock');
+      leftDock.classList.toggle('collapsed', !uiState.leftOpen);
+      rightDock.classList.toggle('collapsed', !uiState.rightOpen);
+
+      var mobBtn3D = document.getElementById('mobBtn3D');
+      var mobBtnLeft = document.getElementById('mobBtnLeft');
+      var mobBtnRight = document.getElementById('mobBtnRight');
+      if (mobBtn3D) {
+        mobBtn3D.classList.toggle('active', !uiState.leftOpen && !uiState.rightOpen);
+        mobBtnLeft.classList.toggle('active', uiState.leftOpen);
+        mobBtnRight.classList.toggle('active', uiState.rightOpen);
+      }
+    }
+
+    function autoFitCameraToVisibleViewport() {
+      var fullW = container.clientWidth;
+      var fullH = container.clientHeight;
+      if (fullW <= 0 || fullH <= 0) return;
+
+      renderer.setSize(fullW, fullH);
+      camera.aspect = fullW / fullH;
+
+      var isMob = window.innerWidth <= 920;
+
+      // 1) 모바일 바텀시트가 열려 있을 때 화면 하단 56%가 가려지므로,
+      //    Three.js 카메라의 투영 중심(setViewOffset)을 상단 가시 영역 정중앙으로 이동
+      var visibleTopRatio = 1.0;
+      if (isMob && (uiState.leftOpen || uiState.rightOpen)) {
+        visibleTopRatio = 0.44; // 상단 44% 영역만 노출됨
+        var shiftY = Math.round(fullH * (1 - visibleTopRatio) * 0.5);
+        camera.setViewOffset(fullW, fullH, 0, shiftY, fullW, fullH);
+      } else {
+        camera.clearViewOffset();
+      }
+      camera.updateProjectionMatrix();
+
+      // 2) 현재 생성된 부스(roomGroup)와 설비 전체의 3D 바운딩 스피어 계산 후,
+      //    가로/세로 종횡비(폰 세로 화면 포함)에 맞춰 잘리지 않는 최적 카메라 거리 역산
+      var targetBox = new THREE.Box3();
+      if (roomGroup) {
+        targetBox.expandByObject(roomGroup);
+      }
+      placedObjects.forEach(function (o) {
+        targetBox.expandByObject(o);
+      });
+
+      if (targetBox.isEmpty()) return;
+
+      var center = new THREE.Vector3();
+      var size = new THREE.Vector3();
+      targetBox.getCenter(center);
+      targetBox.getSize(size);
+
+      var maxDim = Math.max(size.x, size.y, size.z);
+      var fovRad = THREE.MathUtils.degToRad(camera.fov);
+
+      // 실제 노출되는 유효 가로/세로 비율 반영
+      var effectiveH = fullH * visibleTopRatio;
+      var effectiveAspect = fullW / Math.max(effectiveH, 120);
+
+      var distV = (maxDim * 0.68) / Math.tan(fovRad / 2);
+      var distH = (maxDim * 0.68) / (Math.tan(fovRad / 2) * effectiveAspect);
+      var optimalDist = Math.max(distV, distH, 3500);
+
+      // 현재 카메라 모드(3D 조감도 / 2D 평면 / 정면 / 측면) 유지하면서 거리 보정
+      var dir = new THREE.Vector3();
+      if (uiState.cameraMode === '2D') {
+        dir.set(0, 1, 0.001).normalize();
+      } else if (uiState.cameraMode === 'FRONT') {
+        dir.set(0, 0.15, 1).normalize();
+      } else if (uiState.cameraMode === 'SIDE') {
+        dir.set(1, 0.15, 0).normalize();
+      } else {
+        dir.set(0.62, 0.54, 0.68).normalize();
+      }
+
+      orbit.target.copy(center);
+      camera.position.copy(center).addScaledVector(dir, optimalDist);
+      orbit.update();
+
+      var calibBadge = document.getElementById('hudViewportCalib');
+      if (calibBadge) {
+        calibBadge.textContent = '화면보정 완료 (' + fullW + '×' + Math.round(effectiveH) + 'px 맞춤)';
+      }
+    }
+
+    function togglePanel(side) {
+      var isMob = window.innerWidth <= 920;
+      if (side === 'left') {
+        uiState.leftOpen = !uiState.leftOpen;
+        // 모바일에서는 좌·우 패널이 동시에 켜져서 겹치지 않도록 자동 상호 전환
+        if (isMob && uiState.leftOpen) uiState.rightOpen = false;
+      } else if (side === 'right') {
+        uiState.rightOpen = !uiState.rightOpen;
+        if (isMob && uiState.rightOpen) uiState.leftOpen = false;
+      }
+      syncPanelDOMState();
+      setTimeout(autoFitCameraToVisibleViewport, 240);
+    }
+
+    function hideAllPanels() {
+      uiState.leftOpen = false;
+      uiState.rightOpen = false;
+      syncPanelDOMState();
+      setTimeout(autoFitCameraToVisibleViewport, 240);
+    }
+
+    // --- HACCP 클린룸 부스 생성 ---
+    function buildRoom(w, d, h) {
+      if (roomGroup) scene.remove(roomGroup);
+      roomConfig = { w: w, d: d, h: h };
+      roomGroup = new THREE.Group();
+
+      var floorGeo = new THREE.BoxGeometry(w, 80, d);
+      var floorMat = new THREE.MeshStandardMaterial({ color: 0xE2E8F0, roughness: 0.4 });
+      var floorMesh = new THREE.Mesh(floorGeo, floorMat);
+      floorMesh.position.set(0, -40, 0);
+      floorMesh.receiveShadow = true;
+      roomGroup.add(floorMesh);
+
+      var wallMat = new THREE.MeshStandardMaterial({
+        color: 0xCBD5E1,
+        transparent: true,
+        opacity: 0.85,
+        roughness: 0.6
+      });
+      var wallThickness = 150;
+
+      var backWall = createEdgedBox(w, h, wallThickness, wallMat);
+      backWall.position.set(0, h / 2, -d / 2 - wallThickness / 2);
+      backWall.userData.isWall = true;
+      roomGroup.add(backWall);
+
+      var leftWall = createEdgedBox(wallThickness, h, d + wallThickness, wallMat);
+      leftWall.position.set(-w / 2 - wallThickness / 2, h / 2, -wallThickness / 2);
+      leftWall.userData.isWall = true;
+      roomGroup.add(leftWall);
+
+      var trenchGeo = new THREE.PlaneGeometry(w - 800, 220);
+      var trenchMat = new THREE.MeshBasicMaterial({ color: 0x94A3B8, side: THREE.DoubleSide });
+      var trench = new THREE.Mesh(trenchGeo, trenchMat);
+      trench.rotation.x = -Math.PI / 2;
+      trench.position.set(0, 3, -d / 4);
+      roomGroup.add(trench);
+
+      scene.add(roomGroup);
+      document.getElementById('hudZoneInfo').textContent =
+        '구역: HACCP 클린룸 (' + w.toLocaleString() + '×' + d.toLocaleString() + '×H' + h.toLocaleString() + 'mm)';
+    }
+
+    function createEdgedBox(w, h, d, material) {
+      var geo = new THREE.BoxGeometry(w, h, d);
+      var mesh = new THREE.Mesh(geo, material);
+      var edges = new THREE.EdgesGeometry(geo);
+      var line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x334155 }));
+      mesh.add(line);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      return mesh;
+    }
+
+    function createEquipmentMesh(item, w, d, h, rotDeg) {
+      var group = new THREE.Group();
+      var baseMat = new THREE.MeshStandardMaterial({ color: item.color, roughness: 0.35, metalness: 0.25 });
+      var susMat = new THREE.MeshStandardMaterial({ color: 0xE2E8F0, roughness: 0.3, metalness: 0.45 });
+      var darkMat = new THREE.MeshStandardMaterial({ color: 0x1E293B, roughness: 0.5 });
+
+      if (item.type === 'kettle') {
+        var standL = createEdgedBox(160, h * 0.65, 220, susMat);
+        standL.position.set(-w * 0.38, h * 0.325, 0);
+        var standR = createEdgedBox(160, h * 0.65, 220, susMat);
+        standR.position.set(w * 0.38, h * 0.325, 0);
+        group.add(standL, standR);
+
+        var cylGeo = new THREE.CylinderGeometry(Math.min(w, d) * 0.36, Math.min(w, d) * 0.3, h * 0.55, 24);
+        var kettleBody = new THREE.Mesh(cylGeo, baseMat);
+        kettleBody.position.set(0, h * 0.58, 0);
+        var edges = new THREE.EdgesGeometry(cylGeo);
+        kettleBody.add(new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x334155 })));
+        group.add(kettleBody);
+      } else if (item.type === 'conveyor') {
+        var beltFrame = createEdgedBox(w, 140, d, susMat);
+        beltFrame.position.set(0, h - 70, 0);
+        var beltTop = createEdgedBox(w - 40, 20, d - 80, new THREE.MeshStandardMaterial({ color: 0x0D9488 }));
+        beltTop.position.set(0, h + 5, 0);
+        group.add(beltFrame, beltTop);
+
+        [-w * 0.42, w * 0.42].forEach(function (lx) {
+          [-d * 0.38, d * 0.38].forEach(function (lz) {
+            var leg = createEdgedBox(60, h - 140, 60, susMat);
+            leg.position.set(lx, (h - 140) / 2, lz);
+            group.add(leg);
+          });
+        });
+      } else if (item.type === 'shelf') {
+        var woodMat = new THREE.MeshStandardMaterial({ color: 0xD97706, roughness: 0.6 });
+        for (var i = 0; i < 4; i++) {
+          var py = 120 + i * ((h - 200) / 3);
+          var plate = createEdgedBox(w, 40, d, woodMat);
+          plate.position.set(0, py, 0);
+          group.add(plate);
+        }
+        [-w / 2 + 30, w / 2 - 30].forEach(function (lx) {
+          [-d / 2 + 30, d / 2 - 30].forEach(function (lz) {
+            var post = createEdgedBox(45, h, 45, darkMat);
+            post.position.set(lx, h / 2, lz);
+            group.add(post);
+          });
+        });
+      } else if (item.type === 'monitor') {
+        var basePlate = createEdgedBox(w * 0.6, 40, d, darkMat);
+        basePlate.position.set(0, 20, 0);
+        var pole = createEdgedBox(90, h * 0.75, 90, darkMat);
+        pole.position.set(0, h * 0.375, 0);
+        var screen = createEdgedBox(w, h * 0.42, 70, darkMat);
+        screen.position.set(0, h * 0.78, 0);
+        group.add(basePlate, pole, screen);
+      } else if (item.type === 'meeting') {
+        var topCyl = new THREE.CylinderGeometry(w * 0.48, w * 0.48, 45, 24);
+        var topMesh = new THREE.Mesh(topCyl, new THREE.MeshStandardMaterial({ color: 0xFFFFFF }));
+        topMesh.position.set(0, h - 22, 0);
+        topMesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(topCyl), new THREE.LineBasicMaterial({ color: 0x334155 })));
+        var legCyl = new THREE.CylinderGeometry(45, 45, h - 45, 16);
+        var legMesh = new THREE.Mesh(legCyl, darkMat);
+        legMesh.position.set(0, (h - 45) / 2, 0);
+        group.add(topMesh, legMesh);
+
+        [-w * 0.68, w * 0.68].forEach(function (sx) {
+          var stoolCyl = new THREE.CylinderGeometry(180, 180, 80, 20);
+          var stoolSeat = new THREE.Mesh(stoolCyl, new THREE.MeshStandardMaterial({ color: 0xC8102E }));
+          stoolSeat.position.set(sx, 460, 200);
+          var stoolLeg = new THREE.Mesh(new THREE.CylinderGeometry(30, 30, 420, 12), darkMat);
+          stoolLeg.position.set(sx, 210, 200);
+          group.add(stoolSeat, stoolLeg);
+        });
+      } else if (item.type === 'hood') {
+        var hoodBox = createEdgedBox(w, h, d, susMat);
+        hoodBox.position.set(0, 2200 + h / 2, 0);
+        group.add(hoodBox);
+      } else {
+        var bodyBox = createEdgedBox(w, h, d, baseMat);
+        bodyBox.position.set(0, h / 2, 0);
+        group.add(bodyBox);
+
+        if (item.type === 'sink') {
+          var bowl1 = createEdgedBox(w * 0.38, 40, d * 0.65, darkMat);
+          bowl1.position.set(-w * 0.22, h + 2, 0);
+          var bowl2 = createEdgedBox(w * 0.38, 40, d * 0.65, darkMat);
+          bowl2.position.set(w * 0.22, h + 2, 0);
+          group.add(bowl1, bowl2);
+        }
+      }
+
+      group.rotation.y = THREE.MathUtils.degToRad(rotDeg || 0);
+      group.userData = {
+        id: item.id + '-' + (placedObjects.length + 1),
+        catalogId: item.id,
+        name: item.name,
+        type: item.type,
+        w: w, d: d, h: h,
+        elec: item.elec,
+        steam: item.steam,
+        water: item.water
+      };
+      return group;
+    }
+
+    function addEquipmentToScene(item, x, z, customW, customD, customH, rotDeg) {
+      var w = customW || item.w;
+      var d = customD || item.d;
+      var h = customH || item.h;
+      var meshGroup = createEquipmentMesh(item, w, d, h, rotDeg || 0);
+
+      var snapX = Math.round(x / 100) * 100;
+      var snapZ = Math.round(z / 100) * 100;
+      meshGroup.position.set(snapX, 0, snapZ);
+
+      scene.add(meshGroup);
+      placedObjects.push(meshGroup);
+      selectObject(meshGroup);
+      updateObjectTableAndBOM();
+      rebuildDimensionLines();
+
+      logCadCommand('(EQUIP "' + item.id + '" "' + w + 'x' + d + 'x' + h + '" "' + snapX + ',' + snapZ + '" "SNAP")');
+      return meshGroup;
+    }
+
+    function rebuildDimensionLines() {
+      while (dimLinesGroup.children.length > 0) {
+        dimLinesGroup.remove(dimLinesGroup.children[0]);
+      }
+      if (!uiState.showDims) return;
+
+      var lineMat = new THREE.LineBasicMaterial({ color: 0xC8102E });
+      placedObjects.forEach(function (obj) {
+        var wallZ = -roomConfig.d / 2;
+        var pts = [
+          new THREE.Vector3(obj.position.x, 30, wallZ),
+          new THREE.Vector3(obj.position.x, 30, obj.position.z)
+        ];
+        var geo = new THREE.BufferGeometry().setFromPoints(pts);
+        dimLinesGroup.add(new THREE.Line(geo, lineMat));
+      });
+    }
+
+    function renderCatalog(categoryFilter) {
+      var grid = document.getElementById('assetGrid');
+      grid.innerHTML = '';
+      var list = EQUIPMENT_CATALOG.filter(function (it) {
+        return categoryFilter === 'all' || it.category === categoryFilter;
+      });
+
+      list.forEach(function (item) {
+        var card = document.createElement('div');
+        card.className = 'asset-card' + (selectedCatalogItem.id === item.id ? ' selected' : '');
+        card.onclick = function () { selectCatalogCard(item); };
+
+        card.innerHTML =
+          '<div class="asset-thumb">' +
+            '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#1E3A8A" stroke-width="1.7">' +
+              '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M8 19v2M16 19v2"/>' +
+            '</svg>' +
+          '</div>' +
+          '<div class="asset-name">' + item.name + '</div>' +
+          '<div class="asset-code">' + item.w + '×' + item.d + '×' + item.h + '</div>';
+        grid.appendChild(card);
+      });
+    }
+
+    function filterCatalog(cat, btnEl) {
+      document.querySelectorAll('.cat-tab').forEach(function (b) { b.classList.remove('active'); });
+      btnEl.classList.add('active');
+      renderCatalog(cat);
+    }
+
+    function selectCatalogCard(item) {
+      selectedCatalogItem = item;
+      document.getElementById('selectedAssetTitle').textContent = item.name + ' [' + item.id + ']';
+      document.getElementById('paramW').value = item.w;
+      document.getElementById('paramD').value = item.d;
+      document.getElementById('paramH').value = item.h;
+
+      var presetsDiv = document.getElementById('widthPresets');
+      presetsDiv.innerHTML = '';
+      item.widths.forEach(function (wVal) {
+        var chip = document.createElement('span');
+        chip.className = 'preset-chip' + (wVal === item.w ? ' active' : '');
+        chip.textContent = 'W ' + wVal;
+        chip.onclick = function () {
+          document.getElementById('paramW').value = wVal;
+          document.querySelectorAll('.preset-chip').forEach(function (c) { c.classList.remove('active'); });
+          chip.classList.add('active');
+        };
+        presetsDiv.appendChild(chip);
+      });
+      renderCatalog(document.querySelector('.cat-tab.active').getAttribute('onclick').match(/'([^']+)'/)[1]);
+    }
+
+    function placeSelectedCatalogAsset() {
+      var w = parseInt(document.getElementById('paramW').value, 10) || selectedCatalogItem.w;
+      var d = parseInt(document.getElementById('paramD').value, 10) || selectedCatalogItem.d;
+      var h = parseInt(document.getElementById('paramH').value, 10) || selectedCatalogItem.h;
+      var rot = parseInt(document.getElementById('paramRot').value, 10) || 0;
+
+      var offsetIdx = placedObjects.length;
+      var posX = -2200 + (offsetIdx % 4) * 1500;
+      var posZ = -1200 + Math.floor(offsetIdx / 4) * 1400;
+      addEquipmentToScene(selectedCatalogItem, posX, posZ, w, d, h, rot);
+
+      // 모바일에서는 설비 배치 직후 자동으로 카탈로그를 닫고 화면 중앙 보정 실행
+      if (window.innerWidth <= 920) {
+        hideAllPanels();
+      } else {
+        autoFitCameraToVisibleViewport();
+      }
+    }
+
+    var raycaster = new THREE.Raycaster();
+    var mouse = new THREE.Vector2();
+    var selectedObject = null;
+
+    canvas.addEventListener('pointerdown', function (e) {
+      var rect = canvas.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      var intersects = raycaster.intersectObjects(placedObjects, true);
+
+      if (intersects.length > 0) {
+        var rootObj = intersects[0].object;
+        while (rootObj.parent && rootObj.parent !== scene) {
+          rootObj = rootObj.parent;
+        }
+        selectObject(rootObj);
+      }
+    });
+
+    canvas.addEventListener('pointermove', function (e) {
+      var rect = canvas.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      var planeZ = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      var pt = new THREE.Vector3();
+      if (raycaster.ray.intersectPlane(planeZ, pt)) {
+        document.getElementById('hudCoords').textContent =
+          'X: ' + Math.round(pt.x) + ' | Y: ' + Math.round(pt.z) + ' mm';
+      }
+    });
+
+    function selectObject(obj) {
+      selectedObject = obj;
+      if (!obj) {
+        transformControl.detach();
+        document.getElementById('hudSelectedInfo').textContent = '선택: 없음';
+        return;
+      }
+      transformControl.attach(obj);
+      if (uiState.currentTool === 'pushpull') {
+        transformControl.setMode('scale');
+      } else if (uiState.currentTool === 'rotate') {
+        transformControl.setMode('rotate');
+      } else {
+        transformControl.setMode('translate');
+      }
+      document.getElementById('hudSelectedInfo').textContent =
+        '선택: ' + obj.userData.name + ' (' + obj.userData.w + '×' + obj.userData.d + 'mm)';
+    }
+
+    function setSketchTool(tool) {
+      uiState.currentTool = tool;
+      document.querySelectorAll('.icon-btn').forEach(function (b) { b.classList.remove('active'); });
+      var btn = document.getElementById('tool-' + (tool === 'translate' ? 'move' : tool === 'pushpull' ? 'scale' : tool));
+      if (btn) btn.classList.add('active');
+
+      if (selectedObject) {
+        if (tool === 'pushpull') transformControl.setMode('scale');
+        else if (tool === 'rotate') transformControl.setMode('rotate');
+        else transformControl.setMode('translate');
+      }
+    }
+
+    function deleteSelected() {
+      if (!selectedObject) return;
+      transformControl.detach();
+      scene.remove(selectedObject);
+      placedObjects = placedObjects.filter(function (o) { return o !== selectedObject; });
+      selectedObject = null;
+      updateObjectTableAndBOM();
+      rebuildDimensionLines();
+      autoFitCameraToVisibleViewport();
+    }
+
+    function applyColorToSelected(hexStr) {
+      if (!selectedObject) return;
+      selectedObject.traverse(function (child) {
+        if (child.isMesh) {
+          child.material = child.material.clone();
+          child.material.color.set(hexStr);
+        }
+      });
+    }
+
+    function updateObjectTableAndBOM() {
+      var tbody = document.getElementById('sceneObjectTbody');
+      tbody.innerHTML = '';
+      var totalElec = 0, totalSteam = 0, totalWater = 0;
+
+      placedObjects.forEach(function (obj) {
+        var u = obj.userData;
+        totalElec += (u.elec || 0);
+        totalSteam += (u.steam || 0);
+        totalWater += (u.water || 0);
+
+        var tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
+        tr.onclick = function () { selectObject(obj); };
+        tr.innerHTML =
+          '<td><strong>' + u.name + '</strong></td>' +
+          '<td>' + u.w + '×' + u.d + '×' + u.h + '</td>' +
+          '<td>' + Math.round(obj.position.x) + ', ' + Math.round(obj.position.z) + '</td>';
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('bomCount').textContent = placedObjects.length + ' 대';
+      document.getElementById('bomElec').textContent = totalElec.toFixed(1) + ' kW';
+      document.getElementById('bomSteam').textContent = totalSteam + ' kg/hr';
+      document.getElementById('bomWater').textContent = totalWater + ' 개소';
+    }
+
+    function appendAiMessage(htmlContent, isUser) {
+      var log = document.getElementById('aiChatLog');
+      var div = document.createElement('div');
+      div.className = isUser ? 'msg-user' : 'msg-ai';
+      div.innerHTML = htmlContent;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function clearAllEquipment() {
+      transformControl.detach();
+      placedObjects.forEach(function (o) { scene.remove(o); });
+      placedObjects = [];
+      selectedObject = null;
+    }
+
+    function runPresetPrompt(presetKey) {
+      var input = document.getElementById('aiPromptInput');
+      if (presetKey === 'cookRoom') {
+        input.value = '8x6m 가열조리실 만들고 벽쪽에 2조싱크대랑 작업대, 중앙에 스팀솥 3대랑 상부 배기후드 배치해줘';
+      } else if (presetKey === 'packLine') {
+        input.value = '내포장실에 모듈러 컨베이어 2대 연결하고 삼방포장기랑 금속검출기 인라인으로 배치해줘';
+      } else if (presetKey === 'boothDemo') {
+        input.value = '부스에 전시대 2개, 벽 쪽에 선반 하나, 모니터 스탠드, 원형 상담 테이블과 스툴 의자 배치해줘';
+      }
+      sendAiPrompt();
+    }
+
+    function sendAiPrompt() {
+      var input = document.getElementById('aiPromptInput');
+      var text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      appendAiMessage(text, true);
+
+      setTimeout(function () {
+        clearAllEquipment();
+
+        if (text.indexOf('스팀솥') !== -1 || text.indexOf('가열') !== -1) {
+          buildRoom(8000, 6000, 3400);
+          var sink = EQUIPMENT_CATALOG.find(function (i) { return i.id === 'SINK-2BOWL'; });
+          var table = EQUIPMENT_CATALOG.find(function (i) { return i.id === 'WORKTABLE-SUS'; });
+          var kettle = EQUIPMENT_CATALOG.find(function (i) { return i.id === 'KETTLE-300L'; });
+          var hood = EQUIPMENT_CATALOG.find(function (i) { return i.id === 'HOOD-SUS'; });
+
+          addEquipmentToScene(sink, -2600, -2400, 1500, 750, 850, 0);
+          addEquipmentToScene(table, -900, -2400, 1500, 750, 850, 0);
+          addEquipmentToScene(kettle, -1800, 400, 1350, 1200, 1450, 0);
+          addEquipmentToScene(kettle, 0, 400, 1350, 1200, 1450, 0);
+          addEquipmentToScene(kettle, 1800, 400, 1350, 1200, 1450, 0);
+          addEquipmentToScene(hood, 0, 400, 4800, 1500, 550, 0);
+
+          appendAiMessage(
+            '<div class="tool-call-badge">✓ 3D 지오메트리 읽기 (8000×6000mm 클린룸)</div>' +
+            '<div class="tool-call-badge">✓ 설비 카탈로그 호출 및 보이는 화면 자동 보정</div>' +
+            '<strong>배치 완료:</strong> 2조 싱크대, SUS 작업대, 300L 스팀솥 3대와 통합 배기후드를 배치하고 현재 보이는 화면 비율에 맞춰 카메라를 보정했습니다.',
+            false
+          );
+        } else if (text.indexOf('포장') !== -1 || text.indexOf('컨베이어') !== -1) {
+          buildRoom(9000, 5500, 3200);
+          var conv = EQUIPMENT_CATALOG.find(function (i) { return i.id === 'CONV-BELT'; });
+          var wrap = EQUIPMENT_CATALOG.find(function (i) { return i.id === 'FLOW-WRAPPER'; });
+          var det = EQUIPMENT_CATALOG.find(function (i) { return i.id === 'METAL-DET'; });
+          var rack = EQUIPMENT_CATALOG.find(function (i) { return i.id === 'RACK-4TIER'; });
+
+          addEquipmentToScene(conv, -2600, 0, 2200, 650, 850, 0);
+          addEquipmentToScene(wrap, 200, 0, 3000, 950, 1400, 0);
+          addEquipmentToScene(det, 2700, 0, 1600, 700, 1150, 0);
+          addEquipmentToScene(rack, -2800, -2100, 1500, 500, 1800, 0);
+          addEquipmentToScene(rack, -1000, -2100, 1500, 500, 1800, 0);
+
+          if (!uiState.simRunning) toggleSimulation();
+
+          appendAiMessage(
+            '<div class="tool-call-badge">✓ 인라인 공정 스냅 연결 & 시뮬레이션 가동</div>' +
+            '<strong>내포장 자동화 라인 배치 완료:</strong> 컨베이어 → 삼방포장기 → 금속검출기를 인라인으로 연결했습니다.',
+            false
+          );
+        } else {
+          buildRoom(4000, 3000, 2400);
+          var rackItem = EQUIPMENT_CATALOG.find(function (i) { return i.id === 'RACK-4TIER'; });
+          var monItem = EQUIPMENT_CATALOG.find(function (i) { return i.id === 'TV-STAND'; });
+          var meetItem = EQUIPMENT_CATALOG.find(function (i) { return i.id === 'MEETING-SET'; });
+          var pedItem = EQUIPMENT_CATALOG.find(function (i) { return i.id === 'WORKTABLE-SUS'; });
+
+          addEquipmentToScene(rackItem, -1100, -1150, 1000, 400, 1800, 0);
+          addEquipmentToScene(monItem, 200, -1100, 1000, 400, 1600, 0);
+          addEquipmentToScene(pedItem, -1200, 200, 500, 500, 850, 0);
+          addEquipmentToScene(pedItem, -350, 450, 500, 500, 850, 0);
+          addEquipmentToScene(meetItem, 1100, 500, 850, 850, 750, 0);
+
+          appendAiMessage(
+            '<div class="tool-call-badge">✓ 스레드 영상 부스 배치 (4000×3000×2400mm)</div>' +
+            '<strong>스레드 영상 레이아웃 재현 완료:</strong> 다단 선반, 모니터 스탠드, 전시대 2개, 원형 테이블과 스툴을 배치했습니다.',
+            false
+          );
+        }
+
+        // 배치 완료 후 현재 보이는 화면 영역(모바일/PC)에 맞춰 자동 카메라 핏 실행
+        autoFitCameraToVisibleViewport();
+      }, 120);
+    }
+
+    function setCameraMode(mode) {
+      uiState.cameraMode = mode;
+      document.getElementById('btnView3D').classList.toggle('active', mode === '3D');
+      document.getElementById('btnView2D').classList.toggle('active', mode === '2D');
+      autoFitCameraToVisibleViewport();
+    }
+
+    function toggleWallXray() {
+      uiState.wallXray = !uiState.wallXray;
+      document.getElementById('btnToggleWall').classList.toggle('active', uiState.wallXray);
+      setWallOpacity(uiState.wallXray ? 25 : 85);
+    }
+
+    function setWallOpacity(val) {
+      if (!roomGroup) return;
+      var op = parseInt(val, 10) / 100;
+      roomGroup.traverse(function (c) {
+        if (c.isMesh && c.userData.isWall) {
+          c.material.opacity = op;
+        }
+      });
+    }
+
+    function toggleDimensions() {
+      uiState.showDims = !uiState.showDims;
+      var btn = document.getElementById('btnToggleDim');
+      btn.classList.toggle('active', uiState.showDims);
+      btn.textContent = uiState.showDims ? '치수선 ON' : '치수선 OFF';
+      rebuildDimensionLines();
+    }
+
+    function toggleSimulation() {
+      uiState.simRunning = !uiState.simRunning;
+      var btn = document.getElementById('btnToggleSim');
+      btn.classList.toggle('active', uiState.simRunning);
+      btn.textContent = uiState.simRunning ? '물류 시뮬 ON' : '물류 시뮬 OFF';
+
+      simPackets.forEach(function (p) { scene.remove(p); });
+      simPackets = [];
+
+      if (uiState.simRunning) {
+        for (var i = 0; i < 6; i++) {
+          var pkt = createEdgedBox(260, 160, 220, new THREE.MeshStandardMaterial({ color: 0xF59E0B }));
+          pkt.position.set(-3400 + i * 1100, 950, 0);
+          scene.add(pkt);
+          simPackets.push(pkt);
+        }
+      }
+    }
+
+    function createRoomPrompt() {
+      var input = prompt('생성할 HACCP 클린룸 가로,세로,높이(mm)를 입력하세요:', '8000,6000,3200');
+      if (!input) return;
+      var parts = input.split(',').map(function (n) { return parseInt(n.trim(), 10); });
+      if (parts.length >= 3 && parts[0] > 0) {
+        buildRoom(parts[0], parts[1], parts[2]);
+        autoFitCameraToVisibleViewport();
+      }
+    }
+
+    function logCadCommand(cmdText) {
+      var el = document.getElementById('cmdHistory');
+      if (el) el.textContent = '명령: ' + cmdText;
+    }
+
+    function executeCadCommand(raw) {
+      var val = raw.trim();
+      if (!val) return;
+      document.getElementById('cmdInput').value = '';
+      logCadCommand(val);
+
+      if (val.toUpperCase().indexOf('BOX') === 0) {
+        var sp = val.split(/\s+/);
+        var bw = parseInt(sp[1], 10) || 1000;
+        var bd = parseInt(sp[2], 10) || 1000;
+        var bh = parseInt(sp[3], 10) || 1000;
+        addEquipmentToScene(EQUIPMENT_CATALOG[4], 0, 0, bw, bd, bh, 0);
+        autoFitCameraToVisibleViewport();
+      } else {
+        document.getElementById('aiPromptInput').value = val;
+        sendAiPrompt();
+      }
+    }
+
+    function downloadTextFile(filename, content) {
+      var blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+    }
+
+    function exportToOBJ() {
+      var out = '# SHINSEGAE FOOD FE 3D SketchUp OBJ Export (Unit: mm)\n';
+      var vOffset = 1;
+      placedObjects.forEach(function (obj) {
+        out += 'o ' + obj.userData.id + '\n';
+        var u = obj.userData;
+        var x = obj.position.x, y = 0, z = obj.position.z;
+        var hw = u.w / 2, hd = u.d / 2, h = u.h;
+        var verts = [
+          [x - hw, y, z - hd], [x + hw, y, z - hd], [x + hw, y + h, z - hd], [x - hw, y + h, z - hd],
+          [x - hw, y, z + hd], [x + hw, y, z + hd], [x + hw, y + h, z + hd], [x - hw, y + h, z + hd]
+        ];
+        verts.forEach(function (v) { out += 'v ' + v[0] + ' ' + v[1] + ' ' + v[2] + '\n'; });
+        out += 'f ' + vOffset + ' ' + (vOffset+1) + ' ' + (vOffset+2) + ' ' + (vOffset+3) + '\n';
+        out += 'f ' + (vOffset+4) + ' ' + (vOffset+5) + ' ' + (vOffset+6) + ' ' + (vOffset+7) + '\n';
+        vOffset += 8;
+      });
+      downloadTextFile('shinsegae_fe_layout.obj', out);
+    }
+
+    function exportToDAE() {
+      var xml = '<?xml version="1.0" encoding="utf-8"?>\n<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">\n' +
+        '  <asset><unit name="millimeter" meter="0.001"/><up_axis>Y_UP</up_axis></asset>\n' +
+        '  <library_visual_scenes><visual_scene id="Scene" name="SHINSEGAE_FE_BIM">\n';
+      placedObjects.forEach(function (obj) {
+        xml += '    <node id="' + obj.userData.id + '" name="' + obj.userData.name + '">\n' +
+               '      <translate>' + obj.position.x + ' 0 ' + obj.position.z + '</translate>\n' +
+               '    </node>\n';
+      });
+      xml += '  </visual_scene></library_visual_scenes>\n  <scene><instance_visual_scene url="#Scene"/></scene>\n</COLLADA>';
+      downloadTextFile('shinsegae_fe_sketchup.dae', xml);
+    }
+
+    function exportToDXF() {
+      var dxf = '0\nSECTION\n2\nENTITIES\n';
+      placedObjects.forEach(function (obj) {
+        var u = obj.userData;
+        var x1 = obj.position.x - u.w / 2, z1 = obj.position.z - u.d / 2;
+        var x2 = obj.position.x + u.w / 2, z2 = obj.position.z + u.d / 2;
+        dxf += '0\nLINE\n8\nEQUIP\n10\n' + x1 + '\n20
+' + z1 + '\n11\n' + x2 + '\n21\n' + z1 + '\n';
+        dxf += '0\nLINE\n8\nEQUIP\n10\n' + x2 + '\n20
+' + z1 + '\n11\n' + x2 + '\n21\n' + z2 + '\n';
+      });
+      dxf += '0\nENDSEC\n0\nEOF\n';
+      downloadTextFile('shinsegae_fe_plan_2d.dxf', dxf);
+    }
+
+    function exportSceneJSON() {
+      var data = {
+        project: 'SHINSEGAE FOOD FE Plant Layout',
+        unit: 'mm',
+        room: roomConfig,
+        equipment: placedObjects.map(function (o) {
+          return {
+            id: o.userData.id,
+            name: o.userData.name,
+            dims: { w: o.userData.w, d: o.userData.d, h: o.userData.h },
+            pos: { x: Math.round(o.position.x), z: Math.round(o.position.z) },
+            utilities: { elec_kw: o.userData.elec, steam_kgh: o.userData.steam }
+          };
+        })
+      };
+      downloadTextFile('shinsegae_fe_scene.json', JSON.stringify(data, null, 2));
+    }
+
+    window.addEventListener('resize', function () {
+      autoFitCameraToVisibleViewport();
+    });
+
+    
+    // --- 작업 영역 / 격자 설정 커스텀 수치 제어 & GitHub APK 자동 업데이트 ---
+    var customSnapStep = 100;
+    var customGridPitch = 100;
+    var APP_VERSION = 'v1.2.0';
+    var latestApkUrl = '';
+
+    function setCustomGrid(val) {
+      document.getElementById('customGridMm').value = val;
+      document.getElementById('customSnapMm').value = val;
+    }
+
+    function applyCustomWorkspaceAndGrid() {
+      var gMm = parseInt(document.getElementById('customGridMm').value, 10) || 100;
+      var sMm = parseInt(document.getElementById('customSnapMm').value, 10) || 100;
+      var rW = parseInt(document.getElementById('customRoomW').value, 10) || 8000;
+      var rD = parseInt(document.getElementById('customRoomD').value, 10) || 6000;
+      var rH = parseInt(document.getElementById('customRoomH').value, 10) || 3200;
+
+      customGridPitch = Math.max(10, gMm);
+      customSnapStep = Math.max(1, sMm);
+
+      if (gridHelper) scene.remove(gridHelper);
+      var totalGridSize = Math.max(rW, rD) * 2.5;
+      var divisions = Math.min(200, Math.max(10, Math.round(totalGridSize / customGridPitch)));
+      gridHelper = new THREE.GridHelper(totalGridSize, divisions, 0x94A3B8, 0xE2E8F0);
+      gridHelper.position.y = -2;
+      scene.add(gridHelper);
+
+      buildRoom(rW, rD, rH);
+      autoFitCameraToVisibleViewport();
+      document.getElementById('customGridModal').style.display = 'none';
+    }
+
+    // 헤더에 격자/영역 수치 설정 버튼 자동 추가
+    window.addEventListener('DOMContentLoaded', function() {
+      var hdrActions = document.querySelector('.header-actions');
+      if (hdrActions) {
+        var cfgBtn = document.createElement('button');
+        cfgBtn.className = 'btn';
+        cfgBtn.style.padding = '3px 7px';
+        cfgBtn.innerHTML = '⚙️ 격자·영역 수치 / APK (' + APP_VERSION + ')';
+        cfgBtn.onclick = function() {
+          var m = document.getElementById('customGridModal');
+          m.style.display = (m.style.display === 'none') ? 'block' : 'none';
+        };
+        hdrActions.insertBefore(cfgBtn, hdrActions.firstChild);
+      }
+      var savedRepo = localStorage.getItem('SSG_FE_GH_REPO') || 'jud19876-cell/shinsegae-fe-cad';
+      if (savedRepo) {
+        document.getElementById('ghRepoInput').value = savedRepo;
+        checkGitHubReleaseUpdate(savedRepo);
+      }
+      setInterval(function() {
+        var r = localStorage.getItem('SSG_FE_GH_REPO');
+        if (r) checkGitHubReleaseUpdate(r);
+      }, 15 * 60 * 1000);
+    });
+
+    function saveGhRepoAndCheck() {
+      var repo = document.getElementById('ghRepoInput').value.trim();
+      if (!repo) return;
+      localStorage.setItem('SSG_FE_GH_REPO', repo);
+      checkGitHubReleaseUpdate(repo, true);
+    }
+
+    async function checkGitHubReleaseUpdate(repo, manualAlert) {
+      try {
+        var res = await fetch('https://api.github.com/repos/' + repo + '/releases/latest');
+        if (!res.ok) {
+          if (manualAlert) alert('GitHub 저장소 릴리스를 찾을 수 없습니다: ' + repo);
+          return;
+        }
+        var data = await res.json();
+        var latestTag = data.tag_name;
+        var apkAsset = (data.assets || []).find(function(a) { return a.name.endsWith('.apk'); });
+        latestApkUrl = apkAsset ? apkAsset.browser_download_url : data.html_url;
+
+        if (latestTag && latestTag !== APP_VERSION) {
+          var banner = document.getElementById('ghUpdateBanner');
+          document.getElementById('ghUpdateText').textContent =
+            '🚀 새 버전 (' + latestTag + ') 업데이트가 있습니다! (현재 ' + APP_VERSION + ')';
+          banner.style.display = 'flex';
+          // Android WebView Native Bridge가 있으면 백그라운드 사전 다운로드 요청
+          if (window.AndroidAutoUpdater && window.AndroidAutoUpdater.prefetchUpdate) {
+            window.AndroidAutoUpdater.prefetchUpdate(latestApkUrl, latestTag);
+          }
+        } else if (manualAlert) {
+          alert('현재 최신 버전(' + APP_VERSION + ')을 사용 중입니다.');
+        }
+      } catch (e) {
+        if (manualAlert) alert('업데이트 확인 중 오류: ' + e.message);
+      }
+    }
+
+    function triggerApkInstall() {
+      if (window.AndroidAutoUpdater && window.AndroidAutoUpdater.installPrefetchedOrDownload) {
+        window.AndroidAutoUpdater.installPrefetchedOrDownload(latestApkUrl);
+      } else if (latestApkUrl) {
+        window.open(latestApkUrl, '_blank');
+      }
+    }
+
+    // 초기화
+    syncPanelDOMState();
+    selectCatalogCard(EQUIPMENT_CATALOG[0]);
+    runPresetPrompt('cookRoom');
+
+    function animate() {
+      requestAnimationFrame(animate);
+      orbit.update();
+      if (uiState.simRunning && simPackets.length > 0) {
+        simPackets.forEach(function (pkt) {
+          pkt.position.x += 18;
+          if (pkt.position.x > 3400) pkt.position.x = -3400;
+        });
+      }
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>
